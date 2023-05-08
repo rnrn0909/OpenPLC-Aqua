@@ -1,5 +1,10 @@
 # SecureVer
-installation_test
 
 
-commit test
+
+INSTALLATION TEST
+
+```` git clone https://github.com/rnrn0909/SecureVer.git
+cd SecureVer
+sudo ./install.sh linux
+````
