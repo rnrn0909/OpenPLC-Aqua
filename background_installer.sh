@@ -181,6 +181,10 @@ function cert_key_pair(){
         sudo rm -Rf build
         fi
     fi
+    
+    echo "[CREATE TEMPORAL PROGRAM]"
+    cp ./st_files/blank_program.st ./st_files/temporal_program.st
+    
     cd ../
     
     if [ "$1" == "sudo" ]; then
