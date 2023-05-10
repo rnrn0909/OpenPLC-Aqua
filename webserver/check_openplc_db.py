@@ -13,8 +13,8 @@ from Crypto.Util.Padding import pad
 import key_create
 import base64
 
-builddir = r"build/"
-dbfile = r"build/openplc.db"
+# builddir = r"./"
+dbfile = r"./openplc.db"
 
 createTablePrograms = r"""CREATE TABLE `Programs` (
     `Prog_ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -104,12 +104,12 @@ def getIV():
         ivfile.close()
         return iv
 
-def encryption(input):
+def encryption(raw):
     key_create.main()
     key = getKey()
     iv = getIV()
     cipher1 = AES.new(key, AES.MODE_CBC, iv)
-    enc_pwd = cipher1.encrypt(pad(input.encode(), 16))
+    enc_pwd = cipher1.encrypt(pad(raw.encode(), 16))
     enc_encoded = base64.b64encode(enc_pwd).decode() 
     return enc_encoded
 
@@ -187,8 +187,8 @@ def checkTableSlave_dev(conn):
 
 def create_connection():
     """ create a database connection to a SQLite database """
-    if not os.path.exists(builddir):
-        os.mkdir(builddir)
+    # if not os.path.exists(builddir):
+    #     os.mkdir(builddir)
 
     conn = None
     try:
