@@ -168,7 +168,7 @@ function cert_key_pair(){
     fi
 
     echo "[CHECKING DATABASE]"
-    if test -f "./openplc.db"; then
+    if [ -f "./openplc.db" ]; then
 	echo "[DATABASE EXISTS]"
     else
 	python2.7 ./check_openplc_db.py
@@ -177,8 +177,8 @@ function cert_key_pair(){
             echo "OpenPLC was NOT installed!"
             exit 1
 	else
-	    cp ./build/openplc.db ./webserver
-        sudo rm -Rf build
+	    cp ./build/openplc.db ./
+        sudo rm -d build
         fi
     fi
     

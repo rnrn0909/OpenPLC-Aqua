@@ -3,7 +3,6 @@ from sqlite3 import Error
 import datetime
 from dateutil.parser import parse
 
-# Path needs to be changed -> ./openplc.db
 conn = sqlite3.connect("./openplc.db")
 cursor = conn.cursor()
 
