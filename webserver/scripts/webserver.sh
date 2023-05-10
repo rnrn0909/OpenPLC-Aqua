@@ -7,7 +7,7 @@ if [ $? -ne 0 ]; then
         echo "Creating database..."
 	python2.7 ../check_openplc_db.py
 	echo "Closing database again..."
-	chmod 640 ../openplc.db
+	chmod 660 ../openplc.db
 fi
 	
 chmod 600 ../st_files/temporal_program.st
