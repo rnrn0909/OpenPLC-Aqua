@@ -176,9 +176,8 @@ function cert_key_pair(){
             echo "Error creating database"
             echo "OpenPLC was NOT installed!"
             exit 1
-	else
-	    cp ./build/openplc.db ./
-        sudo rm -d build
+        else
+            python3 ./log_reader.py
         fi
     fi
     
