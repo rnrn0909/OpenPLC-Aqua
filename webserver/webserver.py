@@ -16,6 +16,8 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import key_create
 import base64
+import json
+import fileComparison
 
 import flask 
 import flask_login
@@ -381,7 +383,30 @@ def decrypt(cipher, key, iv):
     cipher2 = AES.new(key, AES.MODE_CBC, iv)
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
-    
+
+def IPcomparison(cntip):
+    IPList = 'registeredIP.json'
+    with open(IPList, 'r') as fp:
+        registeredIP = json.load(fp)
+    # cut malicious activity
+        data = registeredIP['registeredIP']
+        i=0
+        for i in range(len(data)):
+            enroledIP = data[i]['ip']
+            i+=1
+            if cntip == enroledIP:
+                print("Successful upload from ", cntip)
+                return 200
+           
+            elif cntip != enroledIP:       # cntip != enroledIP
+                print("Not allowed to upload from ", cntip)
+                return 500
+            elif i >= len(data):
+                break
+            else:
+                print("Something went wrong. \n")
+                return 404
+        
 @login_manager.user_loader
 def user_loader(username):
     database = "openplc.db"
@@ -463,6 +488,7 @@ def login():
     username = flask.request.form['username']
     password = flask.request.form['password']
     epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
+    print({'Accesed ip': flask.request.remote_addr})
 
     database = "openplc.db"
     conn = create_connection(database)
@@ -513,6 +539,7 @@ def start_plc():
             os.system('zenity --warning --width=230 --height=80 --text "Can\'t start Fake program!"')
             return flask.redirect(flask.url_for('dashboard'))
         else:
+            print({'Accessed ip': flask.request.remote_addr})
             monitor.stop_monitor()
             openplc_runtime.start_runtime()
             time.sleep(1)
@@ -959,6 +986,30 @@ def upload_program_action():
         prog_descr = flask.request.form['prog_descr']
         prog_file = flask.request.form['prog_file']
         epoch_time = flask.request.form['epoch_time']
+        # print({'Accessed ip': flask.request.remote_addr})
+        cntIP = flask.request.remote_addr
+        file = open("active_program", "r")
+        cntfile = file.read()
+        cntfile = cntfile.replace('\r','').replace('\n','')           
+        r1, r2 = fileComparison.main(cntfile, prog_file)
+        print(r1, r2)
+        if r1 == True and r2 == True:
+            print("Successful Upload from", cntIP)
+            pass
+        else:       
+            ip_result = IPcomparison(cntIP)
+            if ip_result == 200:
+                print(ip_result)
+                pass
+            elif ip_result == 500:
+                print(ip_result)
+                monitor.stop_monitor()
+                flask_login.logout_user()                           # clear the session
+                os.system('zenity --warning --width=230 --height=80 --text "You are not allowed to upload!!"')
+                return flask.redirect(flask.url_for('login'))       # kick out suspicious user
+            else:               
+                print(ip_result, "Something has gone wrong\n")
+                return flask.redirect(flask.url_for('dashboard'))
 
         (prog_name, prog_descr, prog_file, epoch_time) = sanitize_input(prog_name, prog_descr, prog_file, epoch_time)
         
@@ -1959,6 +2010,7 @@ def add_user():
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
+            cntIP = flask.request.remote_addr
             (name, username, email) = sanitize_input(name, username, email)
             if len(password) < 8:
                 os.system('zenity --warning --width=230 --height=80 --text "Too short password! Minimum 8 characters"')
@@ -1972,7 +2024,8 @@ def add_user():
             form_has_picture = True
             if ('file' not in flask.request.files):
                 form_has_picture = False
-            
+
+            IPlist = 'registeredIP.json'
             database = "openplc.db"
             conn = create_connection(database)
             if (conn != None):
@@ -1986,15 +2039,25 @@ def add_user():
                             pict_file.save(os.path.join('static', filename))
                             cur.execute("INSERT INTO Users (name, username, email, password, pict_file) VALUES (?, ?, ?, ?, ?)", (name, username, email, enc_encoded, "/static/"+filename))
                             cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
+                            update = {"user": username, "ip": cntIP}
                         else:
                             cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, username, email, enc_encoded))
                             cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
+                            update = {"user": username, "ip": cntIP}
                     else:
                         cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, username, email, enc_encoded))
                         cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
+                        update = {"user": username, "ip": cntIP}
                     conn.commit()
                     cur.close()
                     conn.close()
+                    
+                    with open(IPlist, 'r+') as fp:
+                        jdata = json.load(fp)
+                        jdata['registeredIP'].append(update)
+                        fp.seek(0)
+                        json.dump(jdata, fp, indent=4)
+
                     return flask.redirect(flask.url_for('users'))
                     
                 except Error as e:
@@ -2507,6 +2570,7 @@ def escape(s, quote=True):
 #----------------------------------------------------------------------------
 def main():
    print("Starting the web interface...")
+
    
 if __name__ == '__main__':
     #Load information about current program on the openplc_runtime object
@@ -2515,7 +2579,7 @@ if __name__ == '__main__':
     st_file = st_file.replace('\r','').replace('\n','')
     reload(sys)
     sys.setdefaultencoding('UTF8')
-    
+
     database = "openplc.db"
     conn = create_connection(database)
     if (conn != None):
