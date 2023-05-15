@@ -2,12 +2,14 @@
 
 echo '[CLOSING DATABASE...]'
 chmod 640 ../openplc.db
+chmod 640 ../registeredIP.json
 if [ $? -ne 0 ]; then
         echo "Database is not existing"
         echo "Creating database..."
 	python2.7 ../check_openplc_db.py
 	echo "Closing database again..."
-	chmod 660 ../openplc.db
+	chmod 640 ../openplc.db
+	chmod 640 ../registeredIP.json
 fi
 	
 chmod 600 ../st_files/temporal_program.st

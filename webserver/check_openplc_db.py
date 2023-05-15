@@ -12,8 +12,9 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 import key_create
 import base64
+import json
 
-# builddir = r"./"
+# builddir = r"build/"
 dbfile = r"./openplc.db"
 
 createTablePrograms = r"""CREATE TABLE `Programs` (
@@ -92,6 +93,21 @@ gettablesQuery = r"""SELECT name FROM sqlite_master
   WHERE type='table';"""
 getsettingsQuery = r"""SELECT Key FROM Settings"""
 
+initialdict = {
+    "registeredIP": [
+        {
+            "ip": "127.0.0.1", 
+            "user": "openplc"
+        }
+    ]
+}
+
+def ipregister():
+    if not os.path.exists('registeredIP.json'):
+        with open('registeredIP.json', 'w') as json_file:
+            json.dump(initialdict, json_file, indent=4)
+    return 
+
 def getKey():
     with open('key.bin', 'rb') as keyfile:
         key = keyfile.read()
@@ -104,12 +120,12 @@ def getIV():
         ivfile.close()
         return iv
 
-def encryption(raw):
+def encryption(input):
     key_create.main()
     key = getKey()
     iv = getIV()
     cipher1 = AES.new(key, AES.MODE_CBC, iv)
-    enc_pwd = cipher1.encrypt(pad(raw.encode(), 16))
+    enc_pwd = cipher1.encrypt(pad(input.encode(), 16))
     enc_encoded = base64.b64encode(enc_pwd).decode() 
     return enc_encoded
 
@@ -187,9 +203,6 @@ def checkTableSlave_dev(conn):
 
 def create_connection():
     """ create a database connection to a SQLite database """
-    # if not os.path.exists(builddir):
-    #     os.mkdir(builddir)
-
     conn = None
     try:
         conn = sqlite3.connect(dbfile)
@@ -210,5 +223,6 @@ def create_connection():
 
 
 if __name__ == '__main__':
+    ipregister()
     conn = create_connection()
     conn.close()
