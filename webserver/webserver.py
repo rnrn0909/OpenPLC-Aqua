@@ -2162,6 +2162,7 @@ def edit_user():
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
+            cntIP = flask.request.remote_addr
             (user_id, name, username, email) = sanitize_input(user_id, name, username, email)
             if len(password) < 8:
                 os.system('zenity --warning --width=230 --height=80 --text "Too short password! Minimum 8 characters"')
@@ -2171,7 +2172,24 @@ def edit_user():
                 return flask.redirect(flask.url_for('users'))
             else:
                 enc_encoded = encryption(password)
-                
+            
+            iplist = 'registeredIP.json'
+            with open(iplist, 'r') as f:
+                data = json.load(f)
+                for element in data['registeredIP']:
+                    if element['user'] == username and element['ip'] == cntIP:
+                        pass
+                    elif element['user'] == username and element['ip'] != cntIP:
+                        if cntIP != '127.0.0.1':                                
+                            os.system('zenity --warning --width=230 --height=80 --text "Wrong Access! Try Again. "')
+                            monitor.stop_monitor()
+                            flask_login.logout_user()
+                            return flask.redirect(flask.url_for('login'))
+                        else:
+                            pass
+                    else:
+                        pass
+
             form_has_picture = True
             if ('file' not in flask.request.files):
                 form_has_picture = False
@@ -2216,6 +2234,8 @@ def delete_user():
         user_id = flask.request.args.get('user_id')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
         cnt_user = flask_login.current_user.id
+        cntIP = flask.request.remote_addr
+        iplist = 'registeredIP.json'
         database = "openplc.db"
         conn = create_connection(database)
         if (conn != None):
@@ -2223,17 +2243,39 @@ def delete_user():
                 cur = conn.cursor()
                 cur.execute("SELECT username FROM Users WHERE user_id = ?", (int(user_id),))
                 row = cur.fetchone()
-                if (flask_login.current_user.id == row[0]):
+                if (cnt_user == row[0]):
                     cur.close()
                     conn.close()
                     return draw_blank_page() + "<h2>Error</h2><p>You cannot delete yourself!<br><br>Use the back-arrow on your browser to return</p></div></div></div></body></html>"
                 else:
+                    with open(iplist, 'r') as f:
+                        data = json.load(f)
+                        updates = []
+                        for element in data['registeredIP']:
+                            if element['user'] == row[0] and element['ip'] == cntIP:
+                                pass
+                            elif element['user'] == row[0] and element['ip'] != cntIP:
+                                if cntIP != '127.0.0.1':                                # if user accessed from other machines except registered machine, they cannot delete account
+                                    updates.append(element)
+                                    os.system('zenity --warning --width=230 --height=80 --text "Wrong Access! Try Again. "')
+                                    monitor.stop_monitor()
+                                    flask_login.logout_user()
+                                    return flask.redirect(flask.url_for('login'))
+                                else:
+                                    pass
+                            else:
+                                updates.append(element)
+                        data['registeredIP'] = updates
+
                     cur = conn.cursor()
                     cur.execute("DELETE FROM Users WHERE user_id = ?", (int(user_id),))
                     cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (row[0], cnt_user, 'DEREGISTERED', epoch_time))
                     conn.commit()
                     cur.close()
                     conn.close()
+                    
+                    with open("registeredIP.json", 'w') as outfile:
+                        updates = json.dump(data, outfile)    
                     return flask.redirect(flask.url_for('users'))
             except Error as e:
                 print("error connecting to the database" + str(e))
