@@ -168,18 +168,15 @@ function cert_key_pair(){
     fi
 
     echo "[CHECKING DATABASE]"
-    if [ -f "./openplc.db" ]; then
-	echo "[DATABASE EXISTS]"
+    python2.7 ./check_openplc_db.py
+    if [ $? -ne 0 ]; then
+        echo "Error creating database"
+        echo "OpenPLC was NOT installed!"
+        exit 1
     else
-	python2.7 ./check_openplc_db.py
-	if [ $? -ne 0 ]; then
-            echo "Error creating database"
-            echo "OpenPLC was NOT installed!"
-            exit 1
-        else
-            python3 ./log_reader.py
-        fi
+	python3 ./log_reader.py
     fi
+
     
     echo "[CREATE TEMPORAL PROGRAM]"
     cp ./st_files/blank_program.st ./st_files/temporal_program.st
