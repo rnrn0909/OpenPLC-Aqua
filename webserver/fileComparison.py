@@ -1,6 +1,10 @@
 
 import hashlib
 
+def sanitizer(file):
+    file = file.replace('\n', '').replace('\r', '').replace('\t', '')
+    bfile = file.encode('utf-8')
+    return bfile
 
 def cmpHash(text1, text2):
     hashA = hashlib.md5()
@@ -17,23 +21,30 @@ def cmpBytebyByte(text1, text2):
     return text1 == text2
 
 
-def main(fileA, fileB):
+def main(prog_file):
+    file = open("active_program", "r")
+    cntfile = file.read().replace('\r','').replace('\n','')
     path = "./st_files/"
 
-    contentA = open(path+fileA, 'rb')
-    contentB = open(path+fileB, 'rb')
+    contentA = open(path+cntfile, 'r')
+    contentB = open(path+prog_file, 'r')
     
     dataA = contentA.read()
     dataB = contentB.read()
+
+    dataA = sanitizer(dataA)
+    dataB = sanitizer(dataB)
+    
     if len(dataA) != len(dataB):
         hash_result = cmpHash(dataA, dataB)
         byte_compare = cmpBytebyByte(dataA, dataB)
         return hash_result, byte_compare
     else:
         hash_result = cmpHash(dataA, dataB)
-        byte_compare = True
+        byte_compare = cmpBytebyByte(dataA, dataB)
         return hash_result, byte_compare
 
 if __name__ == '__main__':
-    
+    r1, r2 = main('111227.st')
+    print(r1, r2)
     print()

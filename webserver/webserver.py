@@ -986,12 +986,9 @@ def upload_program_action():
         prog_descr = flask.request.form['prog_descr']
         prog_file = flask.request.form['prog_file']
         epoch_time = flask.request.form['epoch_time']
-        # print({'Accessed ip': flask.request.remote_addr})
         cntIP = flask.request.remote_addr
-        file = open("active_program", "r")
-        cntfile = file.read()
-        cntfile = cntfile.replace('\r','').replace('\n','')           
-        r1, r2 = fileComparison.main(cntfile, prog_file)
+
+        r1, r2 = fileComparison.main(prog_file)
         print(r1, r2)
         if r1 == True and r2 == True:
             print("Successful Upload from", cntIP)
@@ -1006,7 +1003,7 @@ def upload_program_action():
                 monitor.stop_monitor()
                 flask_login.logout_user()                           # clear the session
                 os.system('zenity --warning --width=230 --height=80 --text "You are not allowed to upload!!"')
-                return flask.redirect(flask.url_for('login'))       # kick out suspicious user
+                return flask.redirect(flask.url_for('login'))       
             else:               
                 print(ip_result, "Something has gone wrong\n")
                 return flask.redirect(flask.url_for('dashboard'))
