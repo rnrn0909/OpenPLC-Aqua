@@ -8,7 +8,7 @@ During installation, it requires to enter personal information to create certifi
 
 To access to OpenPLC Runtime, enter *https://localhost:8080*.
 
-The browser will warn you the risk of certificate, but you can click "Advanced" and keep accessing. 
+The browser will give you warning about the risk of certificate, but you can keep accessing by clicking "Advanced" button. 
 
 ````
 git clone https://github.com/rnrn0909/SecureVer.git
