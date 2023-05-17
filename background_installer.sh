@@ -174,8 +174,8 @@ function cert_key_pair(){
         echo "OpenPLC was NOT installed!"
         exit 1
     else
-        if test -f openplc.db; then
-            echo "[DATABASE GENERATED]"
+        if [ -f "./openplc.db" ] ; 
+            then echo "[DATABASE GENERATED]"
         else
             echo "[FAILED TO GENERATE DATABASE]"
             exit 1
