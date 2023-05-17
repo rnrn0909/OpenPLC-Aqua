@@ -384,7 +384,7 @@ def decrypt(cipher, key, iv):
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
 
-def IPcomparison(cntip):
+def IPCheck(cntip):
     IPList = 'registeredIP.json'
     with open(IPList, 'r') as fp:
         registeredIP = json.load(fp)
@@ -994,7 +994,7 @@ def upload_program_action():
             print("Successful Upload from", cntIP)
             pass
         else:       
-            ip_result = IPcomparison(cntIP)
+            ip_result = IPCheck(cntIP)
             if ip_result == 200:
                 print(ip_result)
                 pass

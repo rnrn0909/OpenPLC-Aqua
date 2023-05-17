@@ -1,4 +1,3 @@
-
 import hashlib
 
 def sanitizer(file):
@@ -19,7 +18,6 @@ def cmpHash(text1, text2):
 
 def cmpBytebyByte(text1, text2):
     return text1 == text2
-
 
 def main(prog_file):
     file = open("active_program", "r")
@@ -45,6 +43,4 @@ def main(prog_file):
         return hash_result, byte_compare
 
 if __name__ == '__main__':
-    r1, r2 = main('111227.st')
-    print(r1, r2)
     print()
