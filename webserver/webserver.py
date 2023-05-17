@@ -2255,7 +2255,7 @@ def delete_user():
                             if element['user'] == row[0] and element['ip'] == cntIP:
                                 pass
                             elif element['user'] == row[0] and element['ip'] != cntIP:
-                                if cntIP != '127.0.0.1':                                # if user accessed from other machines except registered machine, they cannot delete account
+                                if cntIP != '127.0.0.1':                                
                                     updates.append(element)
                                     os.system('zenity --warning --width=230 --height=80 --text "Wrong Access! Try Again. "')
                                     monitor.stop_monitor()
