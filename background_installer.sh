@@ -174,7 +174,12 @@ function cert_key_pair(){
         echo "OpenPLC was NOT installed!"
         exit 1
     else
-	python3 ./log_reader.py
+        if test -f openplc.db; then
+            echo "[DATABASE GENERATED]"
+        else
+            echo "[FAILED TO GENERATE DATABASE]"
+            exit 1
+        fi
     fi
 
     
