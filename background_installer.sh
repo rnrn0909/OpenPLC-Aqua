@@ -166,21 +166,24 @@ function cert_key_pair(){
         echo "OpenPLC was NOT installed!"
         exit 1
     fi
+    cd ../
 
     echo "[CHECKING DATABASE]"
+    cd webserver
     python2.7 ./check_openplc_db.py
     if [ $? -ne 0 ]; then
         echo "Error creating database"
         echo "OpenPLC was NOT installed!"
         exit 1
     else
-        if [ -f "./openplc.db" ] ; 
-            then echo "[DATABASE GENERATED]"
-        else
-            echo "[FAILED TO GENERATE DATABASE]"
-            exit 1
-        fi
+	if [ -f "./openplc.db" ];
+	    then echo "[GENERATED DATABASE]"
+	else
+	    echo "[FAILED TO GENERATE DATABASE]"
+	    exit 1
+	fi
     fi
+
 
     
     echo "[CREATE TEMPORAL PROGRAM]"
