@@ -23,9 +23,12 @@ def main(prog_file):
     file = open("active_program", "r")
     cntfile = file.read().replace('\r','').replace('\n','')
     path = "./st_files/"
-
-    contentA = open(path+cntfile, 'r')
-    contentB = open(path+prog_file, 'r')
+    try:
+        contentA = open(path+cntfile, 'r')
+        contentB = open(path+prog_file, 'r')
+    except:
+        print("There is no file for comparision. ")
+        return 404, 404
     
     dataA = contentA.read()
     dataB = contentB.read()

@@ -384,28 +384,33 @@ def decrypt(cipher, key, iv):
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
 
-def IPCheck(cntip):
+def IPCheck(cntusr, cntip):     # cut malicious activity
     IPList = 'registeredIP.json'
     with open(IPList, 'r') as fp:
         registeredIP = json.load(fp)
-    # cut malicious activity
         data = registeredIP['registeredIP']
         i=0
         for i in range(len(data)):
             enroledIP = data[i]['ip']
+            enroledUser = data[i]['user']
             i+=1
-            if cntip == enroledIP:
-                print("Successful upload from ", cntip)
-                return 200
-           
-            elif cntip != enroledIP:       # cntip != enroledIP
-                print("Not allowed to upload from ", cntip)
-                return 500
-            elif i >= len(data):
-                break
+            if cntusr == enroledUser:
+                if cntip == enroledIP:
+                    print("Successful upload from ", cntip)
+                    return 200
+                elif cntip != enroledIP:      
+                    if cntip != '127.0.0.1':
+                        print("Not allowed to upload from ", cntip)
+                        return 500
+                    else:
+                        print("Successful upload from ", cntip)
+                elif i >= len(data):
+                    break
+                else:
+                    print("Something went wrong. \n")
+                    return 404
             else:
-                print("Something went wrong. \n")
-                return 404
+                pass
         
 @login_manager.user_loader
 def user_loader(username):
@@ -484,11 +489,11 @@ def index():
 def login():
     if flask.request.method == 'GET':
         return pages.login_head + pages.login_body
-
+    print(flask.request.environ.get('HTTP_X_FORWARDED_FOR', flask.request.remote_addr))
     username = flask.request.form['username']
     password = flask.request.form['password']
     epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-    print({'Accesed ip': flask.request.remote_addr})
+    print({'Accesed ip:',  flask.request.access_route[-1]})
 
     database = "openplc.db"
     conn = create_connection(database)
@@ -526,7 +531,7 @@ def login():
     else:
         return 'Error opening DB'
     
-    return pages.login_head + pages.bad_login_body      # ???
+    return pages.login_head + pages.bad_login_body     
 
 
 @app.route('/start_plc')
@@ -536,10 +541,13 @@ def start_plc():
         return flask.redirect(flask.url_for('login'))
     else:
         if openplc_runtime.project_file == 'temporal_program.st':
-            os.system('zenity --warning --width=230 --height=80 --text "Can\'t start Fake program!"')
+            monitor.stop_monitor()
+            flask_login.logout_user()
+            return flask.redirect(flask.url_for('login'))
+            # os.system('zenity --warning --width=230 --height=80 --text "Can\'t start Fake program!"')
             return flask.redirect(flask.url_for('dashboard'))
         else:
-            print({'Accessed ip': flask.request.remote_addr})
+            print({'Accessed ip:', flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')})
             monitor.stop_monitor()
             openplc_runtime.start_runtime()
             time.sleep(1)
@@ -568,8 +576,7 @@ def runtime_logs():
         return flask.redirect(flask.url_for('login'))
     else:
         return openplc_runtime.logs()
-
-
+    
 @app.route('/dashboard')
 def dashboard():
     global openplc_runtime
@@ -616,7 +623,7 @@ def dashboard():
         
         if openplc_runtime.project_name == 'Launch a new program':
             print('[PROGRAM IS REMOVED. STARTING FAKE PROGRAM...]')
-            os.system('zenity --info --width=230 --height=80 --text "Currently running a fake program. Please launch a new program!"')
+            return_str += """<script>alert('Currently running a fake program. Please launch a new program!')</script>"""
         else:
             pass
         return return_str
@@ -703,7 +710,6 @@ def programs():
             return_str += 'Error connecting to the database. Make sure that your openplc.db file is not corrupt.'
         
         return return_str
-
 
 @app.route('/reload-program', methods=['GET', 'POST'])
 def reload_program():
@@ -883,10 +889,8 @@ def remove_program():
                     openplc_runtime.stop_runtime()
                     openplc_runtime.project_file = 'temporal_program.st'
                     openplc_runtime.project_name = 'Launch a new program'
-                    os.system('zenity --info --width=230 --height=80 --text "Successfully removed. Please launch a new program!"')
                 else:
-                    os.system('zenity --info --width=230 --height=80 --text "Successfully removed"')
-
+                    pass
                 return flask.redirect(flask.url_for('programs'))
                 
             except Error as e:
@@ -986,24 +990,57 @@ def upload_program_action():
         prog_descr = flask.request.form['prog_descr']
         prog_file = flask.request.form['prog_file']
         epoch_time = flask.request.form['epoch_time']
-        cntIP = flask.request.remote_addr
+        cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
+        if len(cntIP) == 0:
+            cntIP = flask.request.remote_addr
+        else:
+            pass
+        cnt_user = flask_login.current_user.id
 
         r1, r2 = fileComparison.main(prog_file)
         print(r1, r2)
         if r1 == True and r2 == True:
             print("Successful Upload from", cntIP)
             pass
-        else:       
-            ip_result = IPCheck(cntIP)
+        elif r1 == 404 and r2 == 404:
+            print("IP address Check... ")
+            ip_result = IPCheck(cnt_user, cntIP)
             if ip_result == 200:
                 print(ip_result)
                 pass
             elif ip_result == 500:
                 print(ip_result)
+                return_str = pages.login_head
+                return_str += """
+                <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+                <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+                <script>
+                    alert('You are not allowed to upload!!')
+                </script>
+                """
+                return_str += pages.login_body
                 monitor.stop_monitor()
                 flask_login.logout_user()                           # clear the session
-                os.system('zenity --warning --width=230 --height=80 --text "You are not allowed to upload!!"')
-                return flask.redirect(flask.url_for('login'))       
+                return return_str     
+        else:       
+            ip_result = IPCheck(cnt_user, cntIP)
+            if ip_result == 200:
+                print(ip_result)
+                pass
+            elif ip_result == 500:
+                print(ip_result)
+                return_str = pages.login_head
+                return_str += """
+                <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+                <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+                <script>
+                    alert('You are not allowed to upload!!')
+                </script>
+                """
+                return_str += pages.login_body
+                monitor.stop_monitor()
+                flask_login.logout_user()                           # clear the session
+                return return_str     
             else:               
                 print(ip_result, "Something has gone wrong\n")
                 return flask.redirect(flask.url_for('dashboard'))
@@ -2007,14 +2044,18 @@ def add_user():
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
-            cntIP = flask.request.remote_addr
+            cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
             (name, username, email) = sanitize_input(name, username, email)
             if len(password) < 8:
-                os.system('zenity --warning --width=230 --height=80 --text "Too short password! Minimum 8 characters"')
-                return flask.redirect(flask.url_for('users'))
+                return_str = users()
+                return_str += """<script>alert('Too short password! Minimum 8 characters')</script>"""
+                # return flask.redirect(flask.url_for('users'))
+                return return_str
             elif len(password) > 16:
-                os.system('zenity --warning --width=230 --height=80 --text "Too long password! Maximum 16 characters"')
-                return flask.redirect(flask.url_for('users'))
+                return_str = users()
+                return_str += """<script>alert('Too long password! Maximum 16 characters')</script>"""
+                # return flask.redirect(flask.url_for('users'))
+                return return_str
             else:       
                 enc_encoded = encryption(password)
 
@@ -2162,17 +2203,20 @@ def edit_user():
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
-            cntIP = flask.request.remote_addr
+            cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
             (user_id, name, username, email) = sanitize_input(user_id, name, username, email)
             if len(password) < 8:
-                os.system('zenity --warning --width=230 --height=80 --text "Too short password! Minimum 8 characters"')
-                return flask.redirect(flask.url_for('users'))
+                return_str = users()
+                return_str += """<script>alert('Too short password! Minimum 8 characters')</script>"""
+                return return_str
             elif len(password) > 16:
-                os.system('zenity --warning --width=230 --height=80 --text "Too long password! Maximum 16 characters"')
-                return flask.redirect(flask.url_for('users'))
+                return_str = users()
+                return_str += """<script>alert('Too long password! Maximum 16 characters')</script>"""
+                # return flask.redirect(flask.url_for('users'))
+                return return_str
             else:
                 enc_encoded = encryption(password)
-            
+                
             iplist = 'registeredIP.json'
             with open(iplist, 'r') as f:
                 data = json.load(f)
@@ -2180,11 +2224,13 @@ def edit_user():
                     if element['user'] == username and element['ip'] == cntIP:
                         pass
                     elif element['user'] == username and element['ip'] != cntIP:
-                        if cntIP != '127.0.0.1':                                
-                            os.system('zenity --warning --width=230 --height=80 --text "Wrong Access! Try Again. "')
+                        if cntIP != '127.0.0.1':
+                            return_str = pages.login_head
+                            return_str += """<script>alert('Wrong Access! Try later')</script>"""  
+                            return_str += pages.login_body                              
                             monitor.stop_monitor()
                             flask_login.logout_user()
-                            return flask.redirect(flask.url_for('login'))
+                            return return_str
                         else:
                             pass
                     else:
@@ -2199,7 +2245,7 @@ def edit_user():
             if (conn != None):
                 try:
                     cur = conn.cursor()
-                    if (password != "mypasswordishere"):
+                    if (password != 'mypasswordishere'):
                         cur.execute("UPDATE Users SET name = ?, username = ?, email = ?, password = ? WHERE user_id = ?", (name, username, email, enc_encoded, int(user_id)))
                         cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'UPDATED', epoch_time))
                     else:
@@ -2234,7 +2280,7 @@ def delete_user():
         user_id = flask.request.args.get('user_id')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
         cnt_user = flask_login.current_user.id
-        cntIP = flask.request.remote_addr
+        cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
         iplist = 'registeredIP.json'
         database = "openplc.db"
         conn = create_connection(database)
@@ -2257,10 +2303,12 @@ def delete_user():
                             elif element['user'] == row[0] and element['ip'] != cntIP:
                                 if cntIP != '127.0.0.1':                                
                                     updates.append(element)
-                                    os.system('zenity --warning --width=230 --height=80 --text "Wrong Access! Try Again. "')
+                                    return_str = pages.login_head
+                                    return_str += """<script>alert('Wrong Access! Try again.')</script>"""
+                                    return_str += pages.login_body
                                     monitor.stop_monitor()
                                     flask_login.logout_user()
-                                    return flask.redirect(flask.url_for('login'))
+                                    return return_str
                                 else:
                                     pass
                             else:
