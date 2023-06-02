@@ -2045,6 +2045,10 @@ def add_user():
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
+            if len(cntIP) == 0:
+                cntIP = flask.request.remote_addr
+            else:
+                pass
             (name, username, email) = sanitize_input(name, username, email)
             if len(password) < 8:
                 return_str = users()
@@ -2204,6 +2208,10 @@ def edit_user():
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
+            if len(cntIP) == 0:
+                cntIP = flask.request.remote_addr
+            else:
+                pass
             (user_id, name, username, email) = sanitize_input(user_id, name, username, email)
             if len(password) < 8:
                 return_str = users()
