@@ -90,6 +90,12 @@ def delete_persistent_file():
         os.remove("persistent.file")
     print("persistent.file removed!")
 
+def ip_sanitizer(cntip):
+    if len(cntip) == 0:
+        cntip = flask.request.remote_addr
+        return cntip
+    else:
+        return cntip
 
 def generate_mbconfig():
     database = "openplc.db"
@@ -991,10 +997,7 @@ def upload_program_action():
         prog_file = flask.request.form['prog_file']
         epoch_time = flask.request.form['epoch_time']
         cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
-        if len(cntIP) == 0:
-            cntIP = flask.request.remote_addr
-        else:
-            pass
+        cntIP = ip_sanitizer(cntIP)
         cnt_user = flask_login.current_user.id
 
         r1, r2 = fileComparison.main(prog_file)
@@ -1909,6 +1912,9 @@ def hardware():
             current_program = current_program.replace('\n', '')
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             username = flask_login.current_user.id
+            cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
+            cntIP = ip_sanitizer(cntIP)
+
             if (conn != None):
                 try:
                     cur = conn.cursor()
@@ -1923,8 +1929,25 @@ def hardware():
                     return_str += 'Error connecting to the database. Make sure that your openplc.db file is not corrupt.<br><br>Error: ' + str(e)
             else:
                 return_str += 'Error connecting to the database. Make sure that your openplc.db file is not corrupt.'
+############
+            
+            IPlist = 'registeredIP.json'
+            ipchecking = IPCheck(username, cntIP)
+            if ipchecking != 200:
+                return_str = pages.login_head
+                return_str += """
+                <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+                <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+                <script>
+                    alert('You are not allowed to upload!!')
+                </script>
+                """
+                return_str += pages.login_body
+                monitor.stop_monitor()
+                flask_login.logout_user() 
+            else:
+                subprocess.call(['./scripts/change_hardware_layer.sh', hardware_layer])
 
-            subprocess.call(['./scripts/change_hardware_layer.sh', hardware_layer])
             return "<head><meta http-equiv=\"refresh\" content=\"0; URL='compile-program?file=" + current_program + "'\" /></head>"
         
         return return_str
@@ -2045,10 +2068,7 @@ def add_user():
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
-            if len(cntIP) == 0:
-                cntIP = flask.request.remote_addr
-            else:
-                pass
+            cntIP = ip_sanitizer(cntIP)
             (name, username, email) = sanitize_input(name, username, email)
             if len(password) < 8:
                 return_str = users()
@@ -2208,10 +2228,7 @@ def edit_user():
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
             cnt_user = flask_login.current_user.id
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
-            if len(cntIP) == 0:
-                cntIP = flask.request.remote_addr
-            else:
-                pass
+            cntIP = ip_sanitizer(cntIP)
             (user_id, name, username, email) = sanitize_input(user_id, name, username, email)
             if len(password) < 8:
                 return_str = users()
@@ -2231,14 +2248,17 @@ def edit_user():
                 for element in data['registeredIP']:
                     if element['user'] == username and element['ip'] == cntIP:
                         pass
-                    elif element['user'] == username and element['ip'] != cntIP:
-                        if cntIP != '127.0.0.1':
-                            return_str = pages.login_head
-                            return_str += """<script>alert('Wrong Access! Try later')</script>"""  
-                            return_str += pages.login_body                              
-                            monitor.stop_monitor()
-                            flask_login.logout_user()
-                            return return_str
+                    elif element['user'] == username:
+                        if element['ip'] != cntIP:
+                            if cntIP != '127.0.0.1':
+                                return_str = pages.login_head
+                                return_str += """<script>alert('Wrong Access! Try later')</script>"""  
+                                return_str += pages.login_body                              
+                                monitor.stop_monitor()
+                                flask_login.logout_user()
+                                return return_str
+                            else:
+                                pass
                         else:
                             pass
                     else:
@@ -2289,6 +2309,7 @@ def delete_user():
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
         cnt_user = flask_login.current_user.id
         cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
+        cntIP = ip_sanitizer(cntIP)
         iplist = 'registeredIP.json'
         database = "openplc.db"
         conn = create_connection(database)
@@ -2308,15 +2329,18 @@ def delete_user():
                         for element in data['registeredIP']:
                             if element['user'] == row[0] and element['ip'] == cntIP:
                                 pass
-                            elif element['user'] == row[0] and element['ip'] != cntIP:
-                                if cntIP != '127.0.0.1':                                
-                                    updates.append(element)
-                                    return_str = pages.login_head
-                                    return_str += """<script>alert('Wrong Access! Try again.')</script>"""
-                                    return_str += pages.login_body
-                                    monitor.stop_monitor()
-                                    flask_login.logout_user()
-                                    return return_str
+                            elif element['user'] == row[0]:
+                                if element['ip'] != cntIP:
+                                    if cntIP != '127.0.0.1':                                
+                                        updates.append(element)
+                                        return_str = pages.login_head
+                                        return_str += """<script>alert('Wrong Access! Try again.')</script>"""
+                                        return_str += pages.login_body
+                                        monitor.stop_monitor()
+                                        flask_login.logout_user()
+                                        return return_str
+                                    else:
+                                        pass
                                 else:
                                     pass
                             else:
