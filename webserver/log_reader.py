@@ -3,6 +3,7 @@ from sqlite3 import Error
 import datetime
 from dateutil.parser import parse
 
+# Path needs to be changed -> ./openplc.db
 conn = sqlite3.connect("./openplc.db")
 cursor = conn.cursor()
 
@@ -63,9 +64,9 @@ for eid, username, cntuser, event, timestamp in fetch2:
         conversion = datetime.datetime.fromtimestamp(timestamp).strftime('%c')
         print(f'EventID: {eid} | username: {username} | cntuser: {cntuser} | Event: {event} | Timestamp: {conversion}')
  
-title3 = "Users"
-print(title3.center(80, "-"))
-cmd3 = cursor.execute("SELECT * FROM Users")
-fetch3 = cmd3.fetchall()
-for uid, name, username, email, pwd, profile in fetch3:
-    print(f"UID: {uid} | Name: {name} | ID: {username} | Email: {email} | Pwd: {pwd} | pict: {profile}")
+# title3 = "Users"
+# print(title3.center(80, "-"))
+# cmd3 = cursor.execute("SELECT * FROM Users")
+# fetch3 = cmd3.fetchall()
+# for uid, name, username, email, pwd, profile in fetch3:
+#     print(f"UID: {uid} | Name: {name} | ID: {username} | Email: {email} | Pwd: {pwd} | pict: {profile}")
