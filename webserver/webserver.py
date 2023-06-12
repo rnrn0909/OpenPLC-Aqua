@@ -377,12 +377,12 @@ def getIV():
         return iv
     
 def usr_encryption(input):
+    key_create.main()
     key = getKey()
     iv = getIV()
-    iv = iv[8:]
-    cipher = DES3.new(key, DES3.MODE_CFB, iv)
-    enc = cipher.encrypt(pad(input.encode(), BLOCKSIZE))
-    enc_encoded = base64.b64encode(enc).decode()            # encode
+    cipher1 = AES.new(iv, AES.MODE_CBC, key)
+    enc_pwd = cipher1.encrypt(pad(input.encode(), 16))
+    enc_encoded = base64.b64encode(enc_pwd).decode() 
     return enc_encoded
 
 def pwd_encryption(input):
@@ -394,9 +394,11 @@ def pwd_encryption(input):
     enc_encoded = base64.b64encode(enc_pwd).decode() 
     return enc_encoded
 
-def decrypt(cipher, key, iv):
+def usr_decryption(cipher):
+    key = getKey()
+    iv = getIV()
     decoder = base64.b64decode(cipher)
-    cipher2 = AES.new(key, AES.MODE_CBC, iv)
+    cipher2 = AES.new(iv, AES.MODE_CBC, key)
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
 
@@ -2022,11 +2024,10 @@ def users():
                 rows = cur.fetchall()
                 cur.close()
                 conn.close()
-                
                 for row in rows:
+                    username = usr_decryption(row[2])
                     return_str += "<tr onclick=\"document.location='edit-user?table_id=" + str(row[0]) + "'\">"
-                    return_str += "<td>" + str(row[1]) + "</td><td>" + str(row[2]) + "</td><td>" + str(row[3]) + "</td></tr>"
-                
+                    return_str += "<td>" + str(row[1]) + "</td><td>" + str(username) + "</td><td>" + str(row[3]) + "</td></tr>"
                 return_str += """
                 </table>
                     <br>
@@ -2321,6 +2322,7 @@ def delete_user():
         user_id = flask.request.args.get('user_id')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
         cnt_user = flask_login.current_user.id
+        enc_user = usr_encryption(cnt_user)
         cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
         cntIP = ip_sanitizer(cntIP)
         iplist = 'registeredIP.json'
@@ -2331,7 +2333,7 @@ def delete_user():
                 cur = conn.cursor()
                 cur.execute("SELECT username FROM Users WHERE user_id = ?", (int(user_id),))
                 row = cur.fetchone()
-                if (cnt_user == row[0]):
+                if (enc_user == row[0]):
                     cur.close()
                     conn.close()
                     return draw_blank_page() + "<h2>Error</h2><p>You cannot delete yourself!<br><br>Use the back-arrow on your browser to return</p></div></div></div></body></html>"

@@ -9,7 +9,6 @@ import sqlite3
 from sqlite3 import Error
 import os
 from Crypto.Cipher import AES
-from Crypto.Cipher import DES3
 from Crypto.Util.Padding import pad
 import key_create
 import base64
@@ -94,7 +93,6 @@ gettablesQuery = r"""SELECT name FROM sqlite_master
   WHERE type='table';"""
 getsettingsQuery = r"""SELECT Key FROM Settings"""
 
-
 def getKey():
     with open('key.bin', 'rb') as keyfile:
         key = keyfile.read()
@@ -108,12 +106,12 @@ def getIV():
         return iv
     
 def usr_encryption(input):
+    key_create.main()
     key = getKey()
     iv = getIV()
-    iv = iv[8:]
-    cipher = DES3.new(key, DES3.MODE_CFB, iv)
-    enc = cipher.encrypt(pad(input.encode(), 16))
-    enc_encoded = base64.b64encode(enc).decode()   
+    cipher1 = AES.new(iv, AES.MODE_CBC, key)
+    enc_pwd = cipher1.encrypt(pad(input.encode(), 16))
+    enc_encoded = base64.b64encode(enc_pwd).decode() 
     return enc_encoded
 
 def pwd_encryption(input):
