@@ -2191,7 +2191,7 @@ def edit_user():
                     conn.close()
                     return_str += "<input type='hidden' value='" + user_id + "' id='user_id' name='user_id'/>" 
                     return_str += "<label for='full_name'><b>Name</b></label><input type='text' id='full_name' name='full_name' value='" + str(row[1]) + "'>"
-                    return_str += "<label for='user_name'><b>Username</b></label><input type='text' id='user_name' name='user_name' value='" + str(row[2]) + "'>"
+                    return_str += "<label for='user_name'><b>Username</b></label><input type='text' id='user_name' name='user_name' value='" + str(usr_decryption(row[2])) + "'>"
                     return_str += "<label for='user_email'><b>Email</b></label><input type='text' id='user_email' name='user_email' value='" + str(row[3]) + "'>"
                     return_str += """
                             <label for='user_password'><b>Password</b></label>
