@@ -13,6 +13,7 @@ import monitoring as monitor
 import sys
 import ctypes
 from Crypto.Cipher import AES
+from Crypto.Cipher import DES3
 from Crypto.Util.Padding import pad, unpad
 import key_create
 import base64
@@ -374,8 +375,17 @@ def getIV():
         iv = ivfile.read()
         ivfile.close()
         return iv
+    
+def usr_encryption(input):
+    key = getKey()
+    iv = getIV()
+    iv = iv[8:]
+    cipher = DES3.new(key, DES3.MODE_CFB, iv)
+    enc = cipher.encrypt(pad(input.encode(), BLOCKSIZE))
+    enc_encoded = base64.b64encode(enc).decode()            # encode
+    return enc_encoded
 
-def encryption(input):
+def pwd_encryption(input):
     key_create.main()
     key = getKey()
     iv = getIV()
@@ -385,7 +395,7 @@ def encryption(input):
     return enc_encoded
 
 def decrypt(cipher, key, iv):
-    decoder = base64.b64decode(cipher, validate=True)
+    decoder = base64.b64decode(cipher)
     cipher2 = AES.new(key, AES.MODE_CBC, iv)
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
@@ -510,8 +520,9 @@ def login():
             rows = cur.fetchall()
             cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, username, 'ACCESSED', epoch_time))
             for row in rows:
-                if (row[0] == username):
-                    enc_encoded = encryption(password) 
+                enc_username = usr_encryption(username)
+                if (row[0]) == enc_username:
+                    enc_encoded = pwd_encryption(password) 
                     if (row[1] == enc_encoded):
                         user = User()
                         user.id = row[0]
@@ -2080,8 +2091,9 @@ def add_user():
                 return_str += """<script>alert('Too long password! Maximum 16 characters')</script>"""
                 # return flask.redirect(flask.url_for('users'))
                 return return_str
-            else:       
-                enc_encoded = encryption(password)
+            else:
+                enc_user = usr_encryption(username)       
+                enc_pwd = pwd_encryption(password)
 
             form_has_picture = True
             if ('file' not in flask.request.files):
@@ -2099,15 +2111,15 @@ def add_user():
                             file_extension = pict_file.filename.split('.')
                             filename = str(random.randint(1,1000000)) + "." + file_extension[-1]
                             pict_file.save(os.path.join('static', filename))
-                            cur.execute("INSERT INTO Users (name, username, email, password, pict_file) VALUES (?, ?, ?, ?, ?)", (name, username, email, enc_encoded, "/static/"+filename))
+                            cur.execute("INSERT INTO Users (name, username, email, password, pict_file) VALUES (?, ?, ?, ?, ?)", (name, enc_user, email, enc_pwd, "/static/"+filename))
                             cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
                             update = {"user": username, "ip": cntIP}
                         else:
-                            cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, username, email, enc_encoded))
+                            cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, enc_user, email, enc_pwd))
                             cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
                             update = {"user": username, "ip": cntIP}
                     else:
-                        cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, username, email, enc_encoded))
+                        cur.execute("INSERT INTO Users (name, username, email, password) VALUES (?, ?, ?, ?)", (name, enc_user, email, enc_pwd))
                         cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'REGISTERED', epoch_time))
                         update = {"user": username, "ip": cntIP}
                     conn.commit()
@@ -2240,7 +2252,8 @@ def edit_user():
                 # return flask.redirect(flask.url_for('users'))
                 return return_str
             else:
-                enc_encoded = encryption(password)
+                enc_user = usr_encryption(username)
+                enc_pwd = pwd_encryption(password)
                 
             iplist = 'registeredIP.json'
             with open(iplist, 'r') as f:
@@ -2274,10 +2287,10 @@ def edit_user():
                 try:
                     cur = conn.cursor()
                     if (password != 'mypasswordishere'):
-                        cur.execute("UPDATE Users SET name = ?, username = ?, email = ?, password = ? WHERE user_id = ?", (name, username, email, enc_encoded, int(user_id)))
+                        cur.execute("UPDATE Users SET name = ?, username = ?, email = ?, password = ? WHERE user_id = ?", (name, enc_user, email, enc_pwd, int(user_id)))
                         cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'UPDATED', epoch_time))
                     else:
-                        cur.execute("UPDATE Users SET name = ?, username = ?, email = ? WHERE user_id = ?", (name, username, email, int(user_id)))
+                        cur.execute("UPDATE Users SET name = ?, username = ?, email = ? WHERE user_id = ?", (name, enc_user, email, int(user_id)))
                         cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (username, cnt_user, 'UPDATED', epoch_time))
                     conn.commit()
                     if (form_has_picture):

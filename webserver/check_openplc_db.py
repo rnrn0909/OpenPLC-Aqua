@@ -9,6 +9,7 @@ import sqlite3
 from sqlite3 import Error
 import os
 from Crypto.Cipher import AES
+from Crypto.Cipher import DES3
 from Crypto.Util.Padding import pad
 import key_create
 import base64
@@ -93,20 +94,6 @@ gettablesQuery = r"""SELECT name FROM sqlite_master
   WHERE type='table';"""
 getsettingsQuery = r"""SELECT Key FROM Settings"""
 
-initialdict = {
-    "registeredIP": [
-        {
-            "ip": "127.0.0.1", 
-            "user": "openplc"
-        }
-    ]
-}
-
-def ipregister():
-    if not os.path.exists('registeredIP.json'):
-        with open('registeredIP.json', 'w') as json_file:
-            json.dump(initialdict, json_file, indent=4)
-    return 
 
 def getKey():
     with open('key.bin', 'rb') as keyfile:
@@ -119,8 +106,17 @@ def getIV():
         iv = ivfile.read()
         ivfile.close()
         return iv
+    
+def usr_encryption(input):
+    key = getKey()
+    iv = getIV()
+    iv = iv[8:]
+    cipher = DES3.new(key, DES3.MODE_CFB, iv)
+    enc = cipher.encrypt(pad(input.encode(), 16))
+    enc_encoded = base64.b64encode(enc).decode()   
+    return enc_encoded
 
-def encryption(input):
+def pwd_encryption(input):
     key_create.main()
     key = getKey()
     iv = getIV()
@@ -152,9 +148,10 @@ def checkTablePrograms(conn):
 
 def checkTableUsers(conn):
     if checkTableExists(conn, "Users", createTableUsers):
-        password = encryption('openplc')
+        username = usr_encryption('openplc')
+        password = pwd_encryption('openplc')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Users (user_id, name, username, email, password, pict_file) VALUES (?, ?, ?, ?, ?, ?)", (10, 'OpenPLC User', 'openplc', 'openplc@openplc.com', password, 'NULL'))
+        cur.execute("INSERT INTO Users (user_id, name, username, email, password, pict_file) VALUES (?, ?, ?, ?, ?, ?)", (10, 'OpenPLC User', username, 'openplc@openplc.com', password, 'NULL'))
         cur.close()
     return
 
@@ -203,6 +200,7 @@ def checkTableSlave_dev(conn):
 
 def create_connection():
     """ create a database connection to a SQLite database """
+    
     conn = None
     try:
         conn = sqlite3.connect(dbfile)
@@ -223,6 +221,5 @@ def create_connection():
 
 
 if __name__ == '__main__':
-    ipregister()
     conn = create_connection()
     conn.close()
