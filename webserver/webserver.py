@@ -402,6 +402,11 @@ def usr_decryption(cipher):
     plain = unpad(cipher2.decrypt(decoder), BLOCKSIZE)
     return plain
 
+def user_extract():
+    userid = flask_login.current_user.id
+    username = usr_decryption(userid)
+    return username
+
 def IPCheck(cntusr, cntip):     # cut malicious activity
     IPList = 'registeredIP.json'
     with open(IPList, 'r') as fp:
@@ -425,6 +430,8 @@ def IPCheck(cntusr, cntip):     # cut malicious activity
                 elif i >= len(data):
                     break
                 else:
+                    print(cntip)
+                    print(enroledIP)
                     print("Something went wrong. \n")
                     return 404
             else:
@@ -855,7 +862,7 @@ def update_program_action():
             return draw_blank_page() + "<h2>Error</h2><p>You need to select a file to be uploaded!<br><br>Use the back-arrow on your browser to return</p></div></div></div></body></html>"
         prog_id = flask.request.form['prog_id']
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-        username = flask_login.current_user.id
+        username = user_extract()
         database = "openplc.db"
         conn = create_connection(database)
         if (conn != None):
@@ -887,7 +894,7 @@ def remove_program():
         if (openplc_runtime.status() == "Compiling"): return draw_compiling_page()
         prog_id = flask.request.args.get('id')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-        username = flask_login.current_user.id
+        username = user_extract()
         database = "openplc.db"
         conn = create_connection(database)
         if (conn != None):
@@ -1011,8 +1018,7 @@ def upload_program_action():
         epoch_time = flask.request.form['epoch_time']
         cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
         cntIP = ip_sanitizer(cntIP)
-        cnt_user = flask_login.current_user.id
-
+        cnt_user = user_extract()
         r1, r2 = fileComparison.main(prog_file)
         print(r1, r2)
         if r1 == True and r2 == True:
@@ -1091,7 +1097,7 @@ def compile_program():
         if (openplc_runtime.status() == "Compiling"): return draw_compiling_page()
         st_file = flask.request.args.get('file')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-        username = flask_login.current_user.id
+        username = user_extract()
         #load information about the program being compiled into the openplc_runtime object
         database = "openplc.db"
         conn = create_connection(database)
@@ -1334,7 +1340,7 @@ def add_modbus_device():
                 = sanitize_input(devname, devtype, devid, devcport, devbaud, devparity, devdata, devstop, devpause, devip, devport, di_start, di_size, do_start, do_size, ai_start, ai_size, aor_start, aor_size, aow_start, aow_size)
 
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            username = flask_login.current_user.id
+            username = user_extract()
             database = "openplc.db"
             conn = create_connection(database)
             if (conn != None):
@@ -1512,7 +1518,7 @@ def modbus_edit_device():
                 = sanitize_input(devname, devtype, devid, devcport, devbaud, devparity, devdata, devstop, devpause, devip, devport, di_start, di_size, do_start, do_size, ai_start, ai_size, aor_start, aor_size, aow_start, aow_size, devid_db)
             
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            username = flask_login.current_user.id
+            username = user_extract()
             database = "openplc.db"
             conn = create_connection(database)
             if (conn != None):
@@ -1544,7 +1550,7 @@ def delete_device():
         database = "openplc.db"
         conn = create_connection(database)
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-        username = flask_login.current_user.id
+        username = user_extract()
         if (conn != None):
             try:
                 cur = conn.cursor()
@@ -1924,7 +1930,7 @@ def hardware():
             conn = create_connection(database)
             current_program = current_program.replace('\n', '')
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            username = flask_login.current_user.id
+            username = user_extract()
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
             cntIP = ip_sanitizer(cntIP)
 
@@ -1944,7 +1950,6 @@ def hardware():
                 return_str += 'Error connecting to the database. Make sure that your openplc.db file is not corrupt.'
 ############
             
-            IPlist = 'registeredIP.json'
             ipchecking = IPCheck(username, cntIP)
             if ipchecking != 200:
                 return_str = pages.login_head
@@ -2078,7 +2083,7 @@ def add_user():
             email = flask.request.form['user_email']
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            cnt_user = flask_login.current_user.id
+            cnt_user = user_extract()
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
             cntIP = ip_sanitizer(cntIP)
             (name, username, email) = sanitize_input(name, username, email)
@@ -2239,7 +2244,7 @@ def edit_user():
             email = flask.request.form['user_email']
             password = flask.request.form['user_password']
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            cnt_user = flask_login.current_user.id
+            cnt_user = user_extract()
             cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
             cntIP = ip_sanitizer(cntIP)
             (user_id, name, username, email) = sanitize_input(user_id, name, username, email)
@@ -2321,8 +2326,7 @@ def delete_user():
         if (openplc_runtime.status() == "Compiling"): return draw_compiling_page()
         user_id = flask.request.args.get('user_id')
         epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-        cnt_user = flask_login.current_user.id
-        enc_user = usr_encryption(cnt_user)
+        cnt_user = user_extract()
         cntIP = flask.request.environ.get('HTTP_X_FORWARDED_FOR', '')
         cntIP = ip_sanitizer(cntIP)
         iplist = 'registeredIP.json'
@@ -2333,7 +2337,8 @@ def delete_user():
                 cur = conn.cursor()
                 cur.execute("SELECT username FROM Users WHERE user_id = ?", (int(user_id),))
                 row = cur.fetchone()
-                if (enc_user == row[0]):
+                raw = usr_decryption(row[0])
+                if (cnt_user == raw):
                     cur.close()
                     conn.close()
                     return draw_blank_page() + "<h2>Error</h2><p>You cannot delete yourself!<br><br>Use the back-arrow on your browser to return</p></div></div></div></body></html>"
@@ -2364,7 +2369,8 @@ def delete_user():
 
                     cur = conn.cursor()
                     cur.execute("DELETE FROM Users WHERE user_id = ?", (int(user_id),))
-                    cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (row[0], cnt_user, 'DEREGISTERED', epoch_time))
+                    raw_row = usr_decryption(row[0])
+                    cur.execute("INSERT INTO UserActy (username, cntuser, event, Timestamp) VALUES (?, ?, ?, ?)", (raw_row, username, 'DEREGISTERED', epoch_time))
                     conn.commit()
                     cur.close()
                     conn.close()
@@ -2567,7 +2573,7 @@ def settings():
             database = "openplc.db"
             conn = create_connection(database)
             epoch_time = datetime.datetime.strftime(datetime.datetime.now(), '%s')
-            username = flask_login.current_user.id
+            username = user_extract()
             if (conn != None):
                 try:
                     cur = conn.cursor()
