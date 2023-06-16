@@ -9,7 +9,7 @@ During installation, it requires to enter personal information to create a certi
 
 ````
 git clone https://github.com/rnrn0909/SecureVer.git
-mv SecureVer OpenPLC_v3
+mv OpenPLC-Aqua OpenPLC_v3
 cd OpenPLC_v3
 sudo ./install.sh linux
 ````
