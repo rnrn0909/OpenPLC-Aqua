@@ -1,17 +1,14 @@
 # OpenPLC-Aqua
 
-
-
 During installation, it requires to enter personal information to create a certificate and we highly recommend to fill it out. If it remains empty, it may cause error. 
 
 
 ````
 git clone https://github.com/rnrn0909/OpenPLC-Aqua.git
-mv OpenPLC-Aqua OpenPLC_v3
-cd OpenPLC_v3
+cd OpenPLC-Aqua
 sudo ./install.sh linux
 ````
-After finish of installation, reboot of machine is recommended, however, you can start via this command:
+Rebooting is recommended after finish of installation, however, you can start via this command:
 
 ````
 sudo systemctl stop openplc
