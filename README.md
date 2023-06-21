@@ -8,7 +8,7 @@ git clone https://github.com/rnrn0909/OpenPLC-Aqua.git
 cd OpenPLC-Aqua
 sudo ./install.sh linux
 ````
-Rebooting is recommended after finish of installation, however, you can start via this command:
+Rebooting is recommended after finish of installation, however, you can start via following command:
 
 ````
 sudo systemctl stop openplc
