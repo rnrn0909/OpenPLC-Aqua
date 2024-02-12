@@ -23,6 +23,7 @@ The browser will give you warning about the risk of certificate, but you can kee
 
 [[Demo Video]](https://youtu.be/knVTQfUdNfU)
 
+<img src="https://github.com/rnrn0909/OpenPLC-Aqua/assets/57967202/3a2574b4-0aa6-453a-a249-b78d7448ab1b" align="right" width="50" height="50">
 
 
 
