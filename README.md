@@ -19,7 +19,7 @@ To access to OpenPLC Runtime, enter *https://localhost:8080*.
 
 The browser will give you warning about the risk of certificate, but you can keep accessing by clicking "Advanced" button. 
 
-[[No Attacks Are Available: Securing the OpenPLC and Related Systems]](https://www.researchgate.net/publication/371700975_No_Attacks_Are_Available_Securing_the_OpenPLC_and_Related_Systems)
+[[No Attacks Are Available: Securing the OpenPLC and Related Systems]](https://dl.gi.de/items/83d49a5f-e2ad-4057-9355-85db62f53b45)
 
 [[Demo Video]](https://youtu.be/knVTQfUdNfU)
 
